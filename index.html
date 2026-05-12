@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第十四届贵州人才博览会岗位查询</title>
+
+<style>
+:root {
+    --primary-color: #007aff;
+    --bg-color: #f5f5f5;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg-color);
+    color: #333;
+}
+
+.container {
+    max-width: 100%;
+    padding: 16px;
+    background: var(--card-bg);
+    min-height: 100vh;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+h1 {
+    margin: 0;
+    font-size: 20px;
+    color: #222;
+}
+
+.search-box {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.unit-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.unit-item {
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.unit-item:hover {
+    background: #f9f9f9;
+}
+
+.unit-name {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--primary-color);
+}
+
+.unit-meta {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.job-count {
+    font-size: 14px;
+    color: #999;
+}
+
+.detail-container {
+    display: none;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.company-info {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+}
+
+.job-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.job-item {
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: #fafafa;
+}
+
+.job-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #222;
+}
+
+.job-meta {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.job-requirements {
+    font-size: 14px;
+    color: #444;
+    white-space: pre-line;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: #666;
+}
+
+.error {
+    color: #d00;
+    text-align: center;
+    padding: 20px;
+    font-size: 16px;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>第十四届贵州人才博览会岗位查询</h1>
+        <input type="text" id="searchInput" class="search-box" placeholder="搜索单位名称...">
+    </div>
+
+    <div id="listContainer">
+        <ul class="unit-list" id="unitList">
+            <li class="loading">正在加载数据...</li>
+        </ul>
+    </div>
+
+    <div id="detailContainer" class="detail-container">
+        <div class="detail-header">
+            <h2 id="detailTitle">单位名称 - 招聘信息</h2>
+            <button class="back-btn" onclick="showList()">← 返回单位列表</button>
+        </div>
+
+        <div class="company-info" id="companyInfo">
+            单位性质：xxx &nbsp;&nbsp; 所属行业：xxx
+        </div>
+
+        <ul class="job-list" id="jobList">
+            <!-- 岗位列表由 JS 动态填充 -->
+        </ul>
+    </div>
+</div>
+
+<!-- 引入 SheetJS 库 -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+// 全局变量
+let allUnits = []; // 所有单位数据
+let allJobs = [];  // 所有岗位数据
+
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+    setupSearch();
+});
+
+// 加载 Excel 数据
+function loadData() {
+    const excelFile = 'data.xlsx'; // 你的 Excel 文件名
+
+    // 从网络加载 Excel 文件（注意：GitHub Pages 支持直接读取同目录下的文件）
+    fetch(excelFile)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`无法加载文件: ${excelFile}`);
+            }
+            return response.arrayBuffer();
+        })
+        .then(data => {
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0]; // 第一个工作表
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            // 处理数据
+            processData(jsonData);
+        })
+        .catch(error => {
+            document.getElementById('unitList').innerHTML = `<li class="error">数据加载失败：${error.message}</li>`;
+            console.error('数据加载错误:', error);
+        });
+}
+
+// 处理原始数据
+function processData(jsonData) {
+    // 按单位分组
+    const unitMap = new Map();
+
+    jsonData.forEach(row => {
+        const unitName = row['单位名称'] || '未知单位';
+        const jobName = row['岗位名称'] || '未知岗位';
+        const demandCount = row['需求人数'] || 0;
+        const unitType = row['单位性质'] || '';
+        const industry = row['所属行业'] || '';
+        const major = row['需求专业'] || '';
+        const education = row['学历学位'] || '';
+        const requirements = row['任职要求'] || '';
+        const workArea = row['工作地域'] || '';
+        const remark = row['备注'] || '';
+
+        if (!unitMap.has(unitName)) {
+            unitMap.set(unitName, {
+                name: unitName,
+                type: unitType,
+                industry: industry,
+                jobs: []
+            });
+        }
+
+        unitMap.get(unitName).jobs.push({
+            name: jobName,
+            count: demandCount,
+            major: major,
+            education: education,
+            requirements: requirements,
+            workArea: workArea,
+            remark: remark
+        });
+    });
+
+    // 转换为数组
+    allUnits = Array.from(unitMap.values());
+    allJobs = jsonData; // 保留原始岗位数据用于搜索
+
+    // 渲染单位列表
+    renderUnitList(allUnits);
+}
+
+// 渲染单位列表
+function renderUnitList(units) {
+    const listElement = document.getElementById('unitList');
+    listElement.innerHTML = '';
+
+    if (units.length === 0) {
+        listElement.innerHTML = '<li class="error">没有找到匹配的单位</li>';
+        return;
+    }
+
+    units.forEach(unit => {
+        const li = document.createElement('li');
+        li.className = 'unit-item';
+        li.onclick = () => showDetail(unit);
+
+        li.innerHTML = `
+            <div class="unit-name">${unit.name}</div>
+            <div class="unit-meta">
+                单位性质：${unit.type} &nbsp;&nbsp; 所属行业：${unit.industry}
+            </div>
+            <div class="job-count">${unit.jobs.length} 个岗位</div>
+        `;
+
+        listElement.appendChild(li);
+    });
+}
+
+// 设置搜索功能
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+        const keyword = this.value.trim().toLowerCase();
+        if (!keyword) {
+            renderUnitList(allUnits);
+            return;
+        }
+
+        const filteredUnits = allUnits.filter(unit => 
+            unit.name.toLowerCase().includes(keyword)
+        );
+
+        renderUnitList(filteredUnits);
+    });
+}
+
+// 显示单位详情
+function showDetail(unit) {
+    document.getElementById('listContainer').style.display = 'none';
+    document.getElementById('detailContainer').style.display = 'block';
+
+    document.getElementById('detailTitle').textContent = `${unit.name} - 招聘信息`;
+    document.getElementById('companyInfo').textContent = `单位性质：${unit.type} &nbsp;&nbsp; 所属行业：${unit.industry}`;
+
+    const jobListElement = document.getElementById('jobList');
+    jobListElement.innerHTML = '';
+
+    unit.jobs.forEach((job, index) => {
+        const li = document.createElement('li');
+        li.className = 'job-item';
+
+        li.innerHTML = `
+            <div class="job-title">${index + 1}、${job.name} ${job.count}人 学历学位：${job.education}</div>
+            <div class="job-meta">需求专业：${job.major}</div>
+            <div class="job-meta">任职要求：${job.requirements}</div>
+            <div class="job-meta">工作地域：${job.workArea}</div>
+            <div class="job-meta">备注：${job.remark}</div>
+        `;
+
+        jobListElement.appendChild(li);
+    });
+}
+
+// 返回单位列表
+function showList() {
+    document.getElementById('detailContainer').style.display = 'none';
+    document.getElementById('listContainer').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
