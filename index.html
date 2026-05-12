@@ -92,10 +92,10 @@ h1 {
 
 .detail-container {
     display: none;
-    padding: 10px;
+    padding: 8px;
     background: var(--card-bg);
     border-radius: 8px;
-    margin-top: 10px;
+    margin-top: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
@@ -107,7 +107,7 @@ h1 {
 }
 
 .back-btn {
-    padding: 8px 16px;
+    padding: 8px 8px;
     background: var(--primary-color);
     color: white;
     border: none;
@@ -129,7 +129,7 @@ h1 {
 }
 
 .job-item {
-    padding: 16px;
+    padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-bottom: 12px;
@@ -157,7 +157,7 @@ h1 {
 
 .loading {
     text-align: center;
-    padding: 40px;
+    padding: 20px;
     font-size: 16px;
     color: #666;
 }
@@ -185,13 +185,13 @@ h1 {
     </div>
 
     <div id="detailContainer" class="detail-container">
-        <div class="detail-header">
+        <button class="back-btn" onclick="showList()">← 返回单位列表</button>
+		<div class="detail-header">
             <h2 id="detailTitle">单位名称 - 招聘信息</h2>
-            <button class="back-btn" onclick="showList()">← 返回单位列表</button>
         </div>
 
         <div class="company-info" id="companyInfo">
-            单位性质：xxx &nbsp;&nbsp; 所属行业：xxx
+            单位性质：xxx　　所属行业：xxx
         </div>
 
         <ul class="job-list" id="jobList">
